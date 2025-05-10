@@ -27,10 +27,10 @@ export default function DockGrid() {
     { id: 2, position: '1-3', status: 'Free' as DockStatus, tail: undefined },
     { id: 3, position: '1-5', status: 'Free' as DockStatus, tail: undefined },
     { id: 4, position: '1-7', status: 'Free' as DockStatus, tail: undefined },
-    { id: 5, position: '3-1', status: 'Free' as DockStatus, tail: undefined },
+    { id: 5, position: '3-1', status: 'Unserviceable' as DockStatus, tail: undefined },
     { id: 6, position: '3-3', status: 'Free' as DockStatus, tail: undefined },
     { id: 7, position: '3-5', status: 'Free' as DockStatus, tail: undefined },
-    { id: 8, position: '3-7', status: 'Free' as DockStatus, tail: undefined },
+    { id: 8, position: '3-7', status: 'Unserviceable' as DockStatus, tail: undefined },
   ]);
 
   const [selectedDock, setSelectedDock] = useState<number | null>(null);
