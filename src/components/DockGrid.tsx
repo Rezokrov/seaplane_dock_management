@@ -23,7 +23,7 @@ interface Aircraft {
 export default function DockGrid() {
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [docks, setDocks] = useState([
-    { id: 1, position: '1-1', status: 'Free' as DockStatus, tail: undefined },
+    { id: 1, position: '1-1', status: 'Occupied' as DockStatus, tail: "8Q-LET" },
     { id: 2, position: '1-3', status: 'Free' as DockStatus, tail: undefined },
     { id: 3, position: '1-5', status: 'Free' as DockStatus, tail: undefined },
     { id: 4, position: '1-7', status: 'Free' as DockStatus, tail: undefined },
@@ -36,18 +36,21 @@ export default function DockGrid() {
   const [selectedDock, setSelectedDock] = useState<number | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<DockStatus>('Free');
   const [selectedTail, setSelectedTail] = useState<string | null>(null);
+  const [readOnly, setReadOnly] = useState(false);
 
   useEffect(() => {
     const fetchAircraft = async () => {
-      const { data, error } = await supabase
-        .from('aircraft')
-        .select('*')
-        .eq('status', 'Active');
+      const { data } = await supabase.from('aircraft').select('*').eq('status', 'Active');
+      if (data) setAircraft(data);
+    };
 
-      if (!error && data) setAircraft(data);
+    const checkUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email === 'view@test.com') setReadOnly(true);
     };
 
     fetchAircraft();
+    checkUserRole();
   }, []);
 
   const assignedAircraft = docks
@@ -59,6 +62,7 @@ export default function DockGrid() {
   );
 
   const handleDockClick = (dockId: number) => {
+    if (readOnly) return;
     setSelectedDock(dockId);
     const dock = docks.find((d) => d.id === dockId);
     if (dock) {
@@ -124,7 +128,9 @@ export default function DockGrid() {
         <div
           key={`${row}-${col}`}
           onClick={() => handleDockClick(dock.id)}
-          className={`cursor-pointer flex items-center justify-center rounded-lg shadow-md text-white font-bold ${bgColor}`}
+          className={`${
+            readOnly ? 'cursor-default' : 'cursor-pointer'
+          } flex items-center justify-center rounded-lg shadow-md text-white font-bold ${bgColor}`}
         >
           {dock.status === 'Occupied' ? dock.tail : dock.status}
         </div>
@@ -147,56 +153,56 @@ export default function DockGrid() {
       {/* Off-Base Aircraft Section */}
       <OffBaseAircraft assignedAircraft={assignedAircraft} />
 
-      {/* Modal for Dock Management */}
-      <Dialog
-        open={selectedDock !== null}
-        onOpenChange={(isOpen) => !isOpen && setSelectedDock(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Manage Dock</DialogTitle>
-          </DialogHeader>
+      {/* Modal for Dock Management - Hidden for Viewer */}
+      {!readOnly && (
+        <Dialog
+          open={selectedDock !== null}
+          onOpenChange={(isOpen) => !isOpen && setSelectedDock(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Manage Dock</DialogTitle>
+            </DialogHeader>
 
-          <div className="flex flex-col gap-4 mt-4">
-            {/* Dock Status Selection */}
-            <div className="flex gap-2">
-              {['Free', 'Occupied', 'Unserviceable'].map((status) => (
-                <Button
-                  key={status}
-                  variant={selectedStatus === status ? 'default' : 'outline'}
-                  onClick={() => setSelectedStatus(status as DockStatus)}
-                >
-                  {status}
-                </Button>
-              ))}
-            </div>
-
-            {/* Aircraft Dropdown Only if Occupied */}
-            {selectedStatus === 'Occupied' && (
-              <select
-                value={selectedTail || ''}
-                onChange={(e) => setSelectedTail(e.target.value)}
-                className="border p-2 rounded-lg"
-              >
-                <option value="">Select Aircraft</option>
-                {availableAircraft.map((a) => (
-                  <option key={a.id} value={a.tail_number}>
-                    {a.tail_number}
-                  </option>
+            <div className="flex flex-col gap-4 mt-4">
+              <div className="flex gap-2">
+                {['Free', 'Occupied', 'Unserviceable'].map((status) => (
+                  <Button
+                    key={status}
+                    variant={selectedStatus === status ? 'default' : 'outline'}
+                    onClick={() => setSelectedStatus(status as DockStatus)}
+                  >
+                    {status}
+                  </Button>
                 ))}
-              </select>
-            )}
+              </div>
 
-            <Button onClick={handleSaveDock}>Save</Button>
-            <Button
-              variant="destructive"
-              onClick={() => setSelectedDock(null)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+              {selectedStatus === 'Occupied' && (
+                <select
+                  value={selectedTail || ''}
+                  onChange={(e) => setSelectedTail(e.target.value)}
+                  className="border p-2 rounded-lg"
+                >
+                  <option value="">Select Aircraft</option>
+                  {availableAircraft.map((a) => (
+                    <option key={a.id} value={a.tail_number}>
+                      {a.tail_number}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <Button onClick={handleSaveDock}>Save</Button>
+              <Button
+                variant="destructive"
+                onClick={() => setSelectedDock(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
