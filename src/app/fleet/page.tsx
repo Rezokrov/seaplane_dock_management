@@ -13,11 +13,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-// ✅ Define the correct type for aircraft
 type Aircraft = {
   id: string;
   tail_number: string;
-  status: string;
+  status: 'Active' | 'Inactive';
   created_at: string;
 };
 
@@ -27,6 +26,10 @@ export default function FleetPage() {
   const [status, setStatus] = useState<'Active' | 'Inactive'>('Active');
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTail, setEditTail] = useState('');
+  const [editStatus, setEditStatus] = useState<'Active' | 'Inactive'>('Active');
 
   const fetchFleet = async () => {
     const { data, error } = await supabase
@@ -50,6 +53,7 @@ export default function FleetPage() {
     if (error) {
       setErrorMsg('Could not add aircraft. Tail number may already exist.');
     } else {
+      setSuccessMsg('Aircraft added successfully!');
       setTailNumber('');
       setStatus('Active');
       setErrorMsg('');
@@ -58,7 +62,34 @@ export default function FleetPage() {
   };
 
   const deleteAircraft = async (id: string) => {
-    await supabase.from('aircraft').delete().eq('id', id);
+    const { error } = await supabase.from('aircraft').delete().eq('id', id);
+    if (!error) {
+      setSuccessMsg('Aircraft deleted successfully!');
+      fetchFleet();
+    }
+  };
+
+  const startEdit = (aircraft: Aircraft) => {
+    setEditingId(aircraft.id);
+    setEditTail(aircraft.tail_number);
+    setEditStatus(aircraft.status);
+    setSuccessMsg('');
+    setErrorMsg('');
+  };
+
+  const saveEdit = async (id: string) => {
+    const { error } = await supabase
+      .from('aircraft')
+      .update({ tail_number: editTail, status: editStatus })
+      .eq('id', id);
+
+    if (!error) {
+      setSuccessMsg('Aircraft updated successfully!');
+    } else {
+      setErrorMsg('Failed to update aircraft.');
+    }
+
+    setEditingId(null);
     fetchFleet();
   };
 
@@ -71,6 +102,9 @@ export default function FleetPage() {
       <div className="p-6 max-w-xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Fleet Management</h1>
 
+        {successMsg && <p className="text-green-500 text-sm mt-1">{successMsg}</p>}
+        {errorMsg && <p className="text-red-500 text-sm mt-1">{errorMsg}</p>}
+
         <div className="mb-6 space-y-2">
           <input
             type="text"
@@ -82,9 +116,7 @@ export default function FleetPage() {
 
           <select
             value={status}
-            onChange={(e) =>
-              setStatus(e.target.value as 'Active' | 'Inactive')
-            }
+            onChange={(e) => setStatus(e.target.value as 'Active' | 'Inactive')}
             className="border p-2 w-full"
           >
             <option value="Active">Active</option>
@@ -97,8 +129,6 @@ export default function FleetPage() {
           >
             Add Aircraft
           </button>
-
-          {errorMsg && <p className="text-red-500 text-sm mt-1">{errorMsg}</p>}
         </div>
 
         {loading ? (
@@ -117,16 +147,67 @@ export default function FleetPage() {
                 {fleet.map((aircraft) => (
                   <TableRow key={aircraft.id}>
                     <TableCell>
-                      ✈️ <strong>{aircraft.tail_number}</strong>
+                      {editingId === aircraft.id ? (
+                        <input
+                          type="text"
+                          value={editTail}
+                          onChange={(e) => setEditTail(e.target.value)}
+                          className="border p-1 rounded w-full"
+                        />
+                      ) : (
+                        <>
+                          ✈️ <strong>{aircraft.tail_number}</strong>
+                        </>
+                      )}
                     </TableCell>
-                    <TableCell>{aircraft.status}</TableCell>
                     <TableCell>
-                      <button
-                        onClick={() => deleteAircraft(aircraft.id)}
-                        className="text-red-500 text-sm"
-                      >
-                        Delete
-                      </button>
+                      {editingId === aircraft.id ? (
+                        <select
+                          value={editStatus}
+                          onChange={(e) =>
+                            setEditStatus(e.target.value as 'Active' | 'Inactive')
+                          }
+                          className="border p-1 rounded"
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      ) : (
+                        aircraft.status
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingId === aircraft.id ? (
+                        <>
+                          <button
+                            onClick={() => saveEdit(aircraft.id)}
+                            className="text-green-500 text-sm mr-2"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="text-gray-500 text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEdit(aircraft)}
+                            className="text-blue-500 text-sm mr-2"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteAircraft(aircraft.id)}
+                            className="text-red-500 text-sm"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

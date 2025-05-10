@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import {
   Dialog,
   DialogContent,
@@ -8,31 +9,80 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import OffBaseAircraft from '@/components/OffBaseAircraft';
+
+type DockStatus = 'Free' | 'Occupied' | 'Unserviceable';
+
+interface Aircraft {
+  id: string;
+  tail_number: string;
+  status: 'Active' | 'Inactive';
+  created_at: string;
+}
 
 export default function DockGrid() {
+  const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [docks, setDocks] = useState([
-    { id: 1, position: '1-1', status: 'Free' },
-    { id: 2, position: '1-3', status: 'Occupied', tail: 'M8-AAA' },
-    { id: 3, position: '1-5', status: 'Free' },
-    { id: 4, position: '1-7', status: 'Occupied', tail: 'M8-BBB' },
-    { id: 5, position: '3-1', status: 'Free' },
-    { id: 6, position: '3-3', status: 'Occupied', tail: 'M8-CCC' },
-    { id: 7, position: '3-5', status: 'Free' },
-    { id: 8, position: '3-7', status: 'Occupied', tail: 'M8-DDD' },
+    { id: 1, position: '1-1', status: 'Free' as DockStatus, tail: undefined },
+    { id: 2, position: '1-3', status: 'Free' as DockStatus, tail: undefined },
+    { id: 3, position: '1-5', status: 'Free' as DockStatus, tail: undefined },
+    { id: 4, position: '1-7', status: 'Free' as DockStatus, tail: undefined },
+    { id: 5, position: '3-1', status: 'Free' as DockStatus, tail: undefined },
+    { id: 6, position: '3-3', status: 'Free' as DockStatus, tail: undefined },
+    { id: 7, position: '3-5', status: 'Free' as DockStatus, tail: undefined },
+    { id: 8, position: '3-7', status: 'Free' as DockStatus, tail: undefined },
   ]);
 
   const [selectedDock, setSelectedDock] = useState<number | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<DockStatus>('Free');
+  const [selectedTail, setSelectedTail] = useState<string | null>(null);
 
-  const handleAssignAircraft = (tailNumber: string) => {
+  useEffect(() => {
+    const fetchAircraft = async () => {
+      const { data, error } = await supabase
+        .from('aircraft')
+        .select('*')
+        .eq('status', 'Active');
+
+      if (!error && data) setAircraft(data);
+    };
+
+    fetchAircraft();
+  }, []);
+
+  const assignedAircraft = docks
+    .filter((d) => d.status === 'Occupied' && d.tail)
+    .map((d) => d.tail!);
+
+  const availableAircraft = aircraft.filter(
+    (a) => !assignedAircraft.includes(a.tail_number)
+  );
+
+  const handleDockClick = (dockId: number) => {
+    setSelectedDock(dockId);
+    const dock = docks.find((d) => d.id === dockId);
+    if (dock) {
+      setSelectedStatus(dock.status);
+      setSelectedTail(dock.tail || null);
+    }
+  };
+
+  const handleSaveDock = () => {
     if (selectedDock !== null) {
-      setDocks((prevDocks) =>
-        prevDocks.map((dock) =>
+      setDocks((prev) =>
+        prev.map((dock) =>
           dock.id === selectedDock
-            ? { ...dock, status: 'Occupied', tail: tailNumber }
+            ? {
+                ...dock,
+                status: selectedStatus,
+                tail: selectedStatus === 'Occupied' ? selectedTail : undefined,
+              }
             : dock
         )
       );
       setSelectedDock(null);
+      setSelectedTail(null);
+      setSelectedStatus('Free');
     }
   };
 
@@ -63,15 +113,20 @@ export default function DockGrid() {
 
     const dock = docks.find((d) => d.position === `${row}-${col}`);
     if (dock) {
+      const bgColor =
+        dock.status === 'Occupied'
+          ? 'bg-red-500'
+          : dock.status === 'Free'
+          ? 'bg-green-500'
+          : 'bg-gray-500';
+
       return (
         <div
           key={`${row}-${col}`}
-          onClick={() => setSelectedDock(dock.id)}
-          className={`cursor-pointer flex items-center justify-center rounded-lg shadow-md text-white font-bold ${
-            dock.status === 'Occupied' ? 'bg-red-500' : 'bg-green-500'
-          }`}
+          onClick={() => handleDockClick(dock.id)}
+          className={`cursor-pointer flex items-center justify-center rounded-lg shadow-md text-white font-bold ${bgColor}`}
         >
-          {dock.status === 'Occupied' ? dock.tail : 'Free'}
+          {dock.status === 'Occupied' ? dock.tail : dock.status}
         </div>
       );
     }
@@ -90,30 +145,55 @@ export default function DockGrid() {
       </div>
 
       {/* Off-Base Aircraft Section */}
-      <div className="mt-10 w-full">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Off-Base Aircraft
-        </h2>
-        <div className="flex flex-wrap gap-4">
-          <div className="bg-yellow-400 text-white px-4 py-2 rounded shadow">
-            M8-EEE
-          </div>
-          <div className="bg-yellow-400 text-white px-4 py-2 rounded shadow">
-            M8-FFF
-          </div>
-        </div>
-      </div>
+      <OffBaseAircraft assignedAircraft={assignedAircraft} />
 
-      {/* Modal for Assigning Aircraft */}
-      <Dialog open={selectedDock !== null} onOpenChange={(isOpen) => !isOpen && setSelectedDock(null)}>
+      {/* Modal for Dock Management */}
+      <Dialog
+        open={selectedDock !== null}
+        onOpenChange={(isOpen) => !isOpen && setSelectedDock(null)}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign Aircraft</DialogTitle>
+            <DialogTitle>Manage Dock</DialogTitle>
           </DialogHeader>
+
           <div className="flex flex-col gap-4 mt-4">
-            <Button onClick={() => handleAssignAircraft('M8-EEE')}>Assign M8-EEE</Button>
-            <Button onClick={() => handleAssignAircraft('M8-FFF')}>Assign M8-FFF</Button>
-            <Button variant="destructive" onClick={() => setSelectedDock(null)}>Cancel</Button>
+            {/* Dock Status Selection */}
+            <div className="flex gap-2">
+              {['Free', 'Occupied', 'Unserviceable'].map((status) => (
+                <Button
+                  key={status}
+                  variant={selectedStatus === status ? 'default' : 'outline'}
+                  onClick={() => setSelectedStatus(status as DockStatus)}
+                >
+                  {status}
+                </Button>
+              ))}
+            </div>
+
+            {/* Aircraft Dropdown Only if Occupied */}
+            {selectedStatus === 'Occupied' && (
+              <select
+                value={selectedTail || ''}
+                onChange={(e) => setSelectedTail(e.target.value)}
+                className="border p-2 rounded-lg"
+              >
+                <option value="">Select Aircraft</option>
+                {availableAircraft.map((a) => (
+                  <option key={a.id} value={a.tail_number}>
+                    {a.tail_number}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <Button onClick={handleSaveDock}>Save</Button>
+            <Button
+              variant="destructive"
+              onClick={() => setSelectedDock(null)}
+            >
+              Cancel
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
