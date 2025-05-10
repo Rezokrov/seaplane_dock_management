@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛩️ Seaplane Dock Management System
 
-## Getting Started
+A dock management system tailored for the seaplane industry to monitor and manage dock occupancy in real-time. This system supports role-based access control, interactive dock management, and clean visual dashboards.
 
-First, run the development server:
+---
+
+## 🚀 Features
+
+- Real-time Dock Status Monitoring  
+- Role-Based Access Control (`OCC` and `Viewer` roles)  
+- Interactive Dock Management with Manual Overrides  
+- Fleet Management CRUD Operations  
+- Aesthetic Reports Dashboard with Charts  
+- Supabase Integration with Persistent Storage  
+- Responsive and User-Friendly Interface  
+
+---
+
+## 📦 Tech Stack
+
+- Next.js (React Framework)  
+- Tailwind CSS + ShadCN UI  
+- Supabase for Database and Authentication  
+- Recharts for Data Visualization  
+
+---
+
+## 🔧 Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/seaplane-dock-management.git
+cd seaplane-dock-management
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env.local` file in the root directory and add the following:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+> Replace `your_supabase_url` and `your_supabase_anon_key` with your actual Supabase project credentials.
+
+### 4. Run the Application
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000) to access the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 👤 User Credentials
 
-## Learn More
+| Role     | Email          | Password |
+|----------|----------------|----------|
+| OCC User | occ@test.com   | 123      |
+| Viewer   | view@test.com  | 123      |
 
-To learn more about Next.js, take a look at the following resources:
+- **OCC User:** Full access to manage docks and fleet.  
+- **Viewer User:** View-only access to monitor docks and fleet.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Enjoy managing the docks efficiently! ✈️⚓
